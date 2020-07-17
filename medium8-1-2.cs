@@ -3,87 +3,137 @@ using System.Collections.Generic;
 
 namespace Task
 {
-    class Program
+    public class Program
     {
         public static void Main(string[] args)
         {
-            int obj1x = 5;
-            int obj1y = 5;
-            bool isalive1 = true;
-            int obj2x = 10;
-            int obj2y = 10;
-            bool isalive2 = true;
-            int obj3x = 15;
-            int obj3y = 15;
-            bool isalive3 = true;
+            MovingObjectData[] movingObjects = {
+                new MovingObjectData(new Vector2(5, 5)),
+                new MovingObjectData(new Vector2(10, 10)),
+                new MovingObjectData(new Vector2(15, 15)) };
 
-            Random random = new Random();
+            TrajectorySimulator trajectorySimulator = new TrajectorySimulator(movingObjects);
+            trajectorySimulator.Simulate();
+        }
+    }
 
+
+    public class TrajectorySimulator
+    {
+        private MovingObjectData[] movingObjects;
+        private ConsoleWriter consoleWriter;
+        private Random random;
+
+        public TrajectorySimulator(MovingObjectData[] objects)
+        {
+            movingObjects = objects;
+            consoleWriter = new ConsoleWriter();
+            random = new Random();
+        }
+
+        public void Simulate()
+        {
             while (true)
             {
-                if (obj1x == obj2x && obj1y == obj2y)
+                ValidateAndSetObjectsStates();
+                ShiftObjectsPosition();
+                SendPositionsToConsole();
+            }
+        }
+
+        private void ValidateAndSetObjectsStates()
+        {
+            for (int i = 0; i < movingObjects.Length; i++)
+            {
+                int j = i + 1;
+
+                while (j < movingObjects.Length)
                 {
-                    isalive1 = false;
-                    isalive2 = false;
-                }
+                    Vector2 pos1 = movingObjects[i].Position;
+                    Vector2 pos2 = movingObjects[j].Position;
 
-                if (obj1x == obj3x && obj1y == obj3y)
-                {
-                    isalive1 = false;
-                    isalive3 = false;
-                }
+                    if (pos1.x == pos2.x && pos1.y == pos2.y)
+                    {
+                        movingObjects[i].KillObject();
+                        movingObjects[j].KillObject();
+                    }
 
-                if (obj2x == obj3x && obj2y == obj3y)
-                {
-                    isalive2 = false;
-                    isalive3 = false;
-                }
-
-                obj1x += random.Next(-1, 1);
-                obj1y += random.Next(-1, 1);
-
-                obj2x += random.Next(-1, 1);
-                obj2y += random.Next(-1, 1);
-
-                obj3x += random.Next(-1, 1);
-                obj3y += random.Next(-1, 1);
-
-                if (obj1x < 0)
-                    obj1x = 0;
-
-                if (obj1y < 0)
-                    obj1y = 0;
-
-                if (obj2x < 0)
-                    obj2x = 0;
-
-                if (obj2y < 0)
-                    obj2y = 0;
-
-                if (obj3x < 0)
-                    obj3x = 0;
-
-                if (obj3y < 0)
-                    obj3y = 0;
-
-                if (isalive1)
-                {
-                    Console.SetCursorPosition(obj1x, obj1y);
-                    Console.Write("1");
-                }
-
-                if (isalive2)
-                {
-                    Console.SetCursorPosition(obj2x, obj2y);
-                    Console.Write("2");
-                }
-
-                if (isalive3)
-                {
-                    Console.SetCursorPosition(obj3x, obj3y);
-                    Console.Write("3");
+                    j++;
                 }
             }
         }
+
+        private void ShiftObjectsPosition()
+        {
+            foreach (var obj in movingObjects)
+            {
+                if (obj.IsAlive)
+                    obj.ShiftPosition(new Vector2(random.Next(-1, 1), random.Next(-1, 1)));
+            }
+        }
+
+        private void SendPositionsToConsole()
+        {
+            for (int i = 0; i < movingObjects.Length; i++)
+            {
+                if (movingObjects[i].IsAlive)
+                    consoleWriter.WritePositionToConsole(movingObjects[i].Position, i + 1);
+            }
+        }
+    }
+
+    public class MovingObjectData
+    {
+        public Vector2 Position { get; private set; }
+        public bool IsAlive { get; private set; } = true;
+
+        public MovingObjectData(Vector2 startPosition)
+        {
+            Position = ValidateCoordinates(startPosition);
+        }
+
+        public void ShiftPosition(Vector2 shift)
+        {
+            Position = ValidateCoordinates(Position + shift);
+        }
+
+        public void KillObject()
+        {
+            IsAlive = false;
+        }
+
+        private Vector2 ValidateCoordinates(Vector2 position)
+        {
+            if (position.x < 0)
+                position.x = 0;
+
+            if (position.y < 0)
+                position.y = 0;
+
+            return position;
+        }
+    }
+
+    public class ConsoleWriter
+    {
+        public void WritePositionToConsole(Vector2 position, int number)
+        {
+            Console.SetCursorPosition(position.x, position.y);
+            Console.Write(number);
+        }
+    }
+
+    public struct Vector2
+    {
+        public int x;
+        public int y;
+
+        public Vector2(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public static Vector2 operator +(Vector2 f1, Vector2 f2) { return new Vector2(f1.x + f2.x, f1.y + f2.y); }
     }
 }
